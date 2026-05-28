@@ -1,0 +1,74 @@
+{
+  "_comment": "This file documents the parameters expected in the CONFIG tab of the Google Sheets file. Do not include real values here. Populate the CONFIG tab in your Sheets file with your actual operational values.",
+
+  "Alert_Threshold": {
+    "type": "number",
+    "description": "Percentage of the limit that triggers Alert status. Results between this value and 100% of the limit are classified as Alert.",
+    "example": 70,
+    "unit": "%"
+  },
+
+  "Critical_Threshold": {
+    "type": "number",
+    "description": "Percentage of the limit that triggers Critical status. Results at or above this value require immediate CAPA and full-chain notification.",
+    "example": 300,
+    "unit": "%"
+  },
+
+  "Resample_Deadline_Days": {
+    "type": "number",
+    "description": "Number of business days allowed to perform a resample after a Non-Conforming result is recorded.",
+    "example": 5,
+    "unit": "business days"
+  },
+
+  "Recurrence_Window_Months": {
+    "type": "number",
+    "description": "Time window (in months) used to detect recurrence. If 2 or more Non-Conforming results exist for the same point within this window, a recurrence flag is raised.",
+    "example": 6,
+    "unit": "months"
+  },
+
+  "Trend_Consecutive_N": {
+    "type": "number",
+    "description": "Number of consecutive increasing results required to trigger the upward trend flag at a sampling point.",
+    "example": 3,
+    "unit": "results"
+  },
+
+  "Email_Primary": {
+    "type": "string",
+    "description": "Email address of the primary quality contact. Receives all alert notifications.",
+    "example": "quality.supervisor@yourcompany.com"
+  },
+
+  "Email_Production": {
+    "type": "string",
+    "description": "Email address of the production supervisor. Receives resample instructions on Non-Conforming results.",
+    "example": "production.supervisor@yourcompany.com"
+  },
+
+  "Email_Manager_1": {
+    "type": "string",
+    "description": "Email address of quality manager level 1. Receives NC Recurrence and Critical notifications.",
+    "example": "quality.manager@yourcompany.com"
+  },
+
+  "Email_Manager_2": {
+    "type": "string",
+    "description": "Email address of quality manager level 2 or director. Receives Critical and Salmonella notifications only.",
+    "example": "director@yourcompany.com"
+  },
+
+  "Active_Year": {
+    "type": "number",
+    "description": "The calendar year for which the sampling schedule is currently active. Used by the schedule generation function.",
+    "example": 2025
+  },
+
+  "Seasonality_Rule_Active": {
+    "type": "boolean",
+    "description": "Enables or disables the seasonality trend rule (T3). Should remain FALSE until at least 2 years of historical data are available at the same sampling points.",
+    "example": false
+  }
+}
