@@ -43,8 +43,9 @@ function _loadSamplingPoints() {
         limitSAL:         row[9] !== '' ? String(row[9]).trim() : null,
         frequency:        String(row[10]).trim(),
         collectionMethod: String(row[11]).trim(),
-        active:           row[12] === true || String(row[12]).toUpperCase() === 'TRUE'
-      });
+        active:           row[12] === true || String(row[12]).toUpperCase() === 'TRUE',
+        inactiveDate:     row[13] instanceof Date ? row[13] : null,
+        inactiveReason:   row[14] !== '' ? String(row[14]).trim() : null      });
     }
 
     _samplingPointsCache = points;
@@ -69,13 +70,30 @@ function getPoint(pointId) {
   }
 
   var points = _loadSamplingPoints();
-  var point  = points.filter(function(p) {
-    return p.pointId === pointId && p.active;
+
+  // Busca o ponto independente do status ativo/inativo
+  var found = points.filter(function(p) {
+    return p.pointId === pointId;
   });
 
-  return point.length > 0 ? point[0] : null;
-}
+  if (found.length === 0) return null;
 
+  var point = found[0];
+
+  // Ponto inativo sem justificativa — rejeita e força correção
+  if (!point.active) {
+    if (isEmpty(point.inactiveDate) || isEmpty(point.inactiveReason)) {
+      throw new Error(
+        'getPoint: ponto "' + pointId + '" está inativo mas sem data ou justificativa de inativação. ' +
+        'Preencha os campos Inactive_Date e Inactive_Reason na aba SAMPLING_POINTS.'
+      );
+    }
+    // Inativo com justificativa — retorna null normalmente (arquivado)
+    return null;
+  }
+
+  return point;
+}
 
 /**
  * Retorna todos os pontos ativos.
