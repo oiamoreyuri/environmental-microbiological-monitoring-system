@@ -5,7 +5,8 @@ var SHEET_NAMES = {
   RESULTS:         'RESULTS',
   ACTIONS:         'ACTIONS',
   CONFIG:          'CONFIG',
-  SYSTEM_LOG:      'SYSTEM_LOG'
+  SYSTEM_LOG:      'SYSTEM_LOG',
+  HOLIDAYS:        'HOLIDAYS'
 };
 
 /**
