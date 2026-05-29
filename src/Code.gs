@@ -261,28 +261,3 @@ function installTriggers() {
     user:            'system'
   });
 }
-
-
-// =============================================================================
-// UTILITÁRIOS DE DESENVOLVIMENTO — remover ou desabilitar em produção
-// =============================================================================
-
-/**
- * Testa o fluxo completo com um resultado fictício.
- * Executar manualmente no Apps Script Editor para validar o sistema.
- * NÃO executar em produção com dados reais na aba RESULTS.
- * @returns {void}
- */
-function _devTestSubmission() {
-  var testData = {
-    pointId:        'REPLACE-WITH-REAL-POINT-ID',
-    collectionDate: new Date(),
-    assay:          'MA',
-    result:         55,
-    analyst:        'test@yourcompany.com',
-    notes:          'Dev test — not a real result'
-  };
-
-  processFormSubmission(testData);
-  Logger.log('Dev test completed. Check RESULTS, ACTIONS and SYSTEM_LOG tabs.');
-}
