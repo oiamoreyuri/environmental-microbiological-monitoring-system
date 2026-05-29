@@ -6,15 +6,81 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.0] — 2026-05-29
+
+### Added
+
+**All 11 Apps Script modules implemented**
+
+- `Utils.gs` — utility functions, holiday logic via HOLIDAYS sheet tab
+  (no hardcoded dates — editable annually by quality team)
+- `Config.gs` — parameter access layer, SHEET_NAMES constants, internal cache
+- `SamplingPoints.gs` — master table access, deactivation requires mandatory
+  date and justification fields (ALCOA++ compliance)
+- `Calculations.gs` — pure logic module (no Sheets I/O): status classification,
+  upward trend detection, recurrence count, action type and recipient
+  level determination. CAPA triggered on 3rd NC in 6-month window,
+  Critical result, or Salmonella detection
+- `Log.gs` — structured event logging to SYSTEM_LOG tab
+- `Actions.gs` — corrective action lifecycle with automatic deadlines:
+  Resample in business days (Resample_Deadline_Days),
+  CAPA in calendar days (CAPA_Deadline_Days)
+- `Notifications.gs` — pure module (no Sheets I/O): HTML email alerts
+  for NC, trend, overdue collections, overdue actions,
+  annual holiday reminder, and monthly report delivery
+- `Schedule.gs` — annual schedule generation from SAMPLING_POINTS,
+  overdue collection detection, collection-to-schedule linking by month/year
+- `Results.gs` — 13-step orchestration flow (validate → calculate → write
+  → schedule → trend → recurrence → action → notify → log),
+  immutable result log, correction records with recalculated status
+- `Report.gs` — monthly PDF with KPI cards and NC detail table,
+  auto Drive folder structure (Environmental Monitoring Reports/YEAR/)
+- `Code.gs` — entry point: onFormSubmit trigger, daily check (overdue
+  collections + actions + holiday reminder), monthly report trigger,
+  annual schedule trigger, programmatic trigger installation,
+  dev test utility
+
+**Business logic refinements**
+
+- CAPA opens only on 3rd NC in 6-month window, Critical, or Salmonella.
+  Single NC never opens CAPA directly — avoids excessive overhead
+  for isolated events that may not represent systemic failure
+- detectRecurrence() returns NC count (number) instead of boolean,
+  enabling graduated escalation: 2nd NC alerts manager, 3rd NC opens CAPA
+- CAPA deadline in calendar days, Resample deadline in business days
+- Annual holiday reminder: daily email from Jan 1st until HOLIDAYS tab
+  contains at least one entry for the current year
+
+### Próximos passos
+
+- [ ] Create Google Sheets file with all 6 tabs + HOLIDAYS tab
+- [ ] Create Google Forms for data entry
+- [ ] Link Forms to Sheets
+- [ ] clasp push and initial tests
+- [ ] Populate SAMPLING_POINTS tab with real data
+- [ ] Populate HOLIDAYS tab (2025 and 2026)
+- [ ] Populate CONFIG tab with operational parameters
+- [ ] End-to-end tests with real data
+- [ ] Connect Looker Studio dashboard
+- [ ] Revise PS.LAB. 02 to Rev. 05
+- [ ] Final documentation and v1.0.0 release
+
+---
+
 ## [0.1.0] — 2026-05-27
 
 ### Added
 
 **Architecture and initial documentation**
 
-- Problem definition: environmental monitoring programs in food manufacturing facilities commonly operate with dispersed data, manually calculated conformity status, no objective trend criteria, and no automation for non-conformance response.
+- Problem definition: environmental monitoring programs in food manufacturing
+  facilities commonly operate with dispersed data, manually calculated
+  conformity status, no objective trend criteria, and no automation for
+  non-conformance response.
 
-- Stack decision: Google Sheets + Apps Script + Looker Studio, with future integration path to external systems via Google Sheets API v4 (REST, no proprietary dependencies).
+- Stack decision: Google Sheets + Apps Script + Looker Studio, with future
+  integration path to external systems via Google Sheets API v4
+  (REST, no proprietary dependencies).
 
 - Complete database schema (6 tabs):
   - `SAMPLING_POINTS` — master reference table for points, limits, and frequencies
@@ -24,68 +90,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `CONFIG` — editable system parameters, no code changes needed for setup
   - `SYSTEM_LOG` — Apps Script event audit trail
 
-- Modular architecture of 11 `.gs` files, each with single responsibility:
-  - `Code.gs` — entry point and triggers
-  - `Config.gs` — parameter access layer
-  - `SamplingPoints.gs` — master table access
-  - `Schedule.gs` — schedule generation and updates
-  - `Results.gs` — result recording
-  - `Calculations.gs` — pure logic: status, trend, recurrence (no Sheets I/O)
-  - `Actions.gs` — corrective action management
-  - `Notifications.gs` — email composition and dispatch (no Sheets I/O)
-  - `Report.gs` — monthly PDF generation
-  - `Log.gs` — event logging
-  - `Utils.gs` — utility functions, no external dependencies
+- Modular architecture of 11 `.gs` files, each with single responsibility.
 
-**Business logic defined**
+- Business logic defined: 4-level status classification, trend detection rules,
+  5 program KPIs, notification routing by status level.
 
-- Result classification into 4 levels:
-  - Conforming: < 70% of limit
-  - Alert: 70% to 99% of limit
-  - Non-Conforming: ≥ 100% of limit
-  - Critical: ≥ 300% of limit
-  - Salmonella: any detection = Critical regardless of threshold
-
-- Trend detection rules:
-  - Upward trend (T1): 3 consecutive increasing results at the same sampling point
-  - Recurrence (T2): 2 Non-Conforming results at the same point within a 6-month window
-  - Seasonality (T3): defined in architecture, inactive until 2-year historical baseline is available
-
-- Program KPIs (5 indicators):
-  - Overall conformity rate (target ≥ 95%)
-  - Schedule adherence (target ≥ 90%)
-  - Recurrence rate (target 0%)
-  - Average NC response time (target ≤ 5 business days)
-  - Corrective action effectiveness (target ≥ 90%)
-
-- Notification routing by status:
-  - Alert: email to responsible analyst
-  - Non-Conforming: email to quality supervisor and production supervisor with resample instructions
-  - NC Recurrence: email to quality supervisor, production supervisor, and quality manager; automatic CAPA record
-  - Critical: email to full chain
-  - Salmonella: email to full chain with process stop flag
+- Design principles: single responsibility, no magic numbers, pure logic
+  separation, fail-safe defaults, extensibility via SAMPLING_POINTS tab.
 
 **Design decisions recorded**
 
-- Limits maintained as defined in the facility's environmental monitoring procedure. Future revision based on historical baseline after 12 months of operation, using mean + 3 standard deviations methodology (ICMSF reference).
-
-- Alert threshold (70%) and Critical threshold (300%) documented with auditable technical justification in the procedure document.
-
-- `Calculations.gs` and `Notifications.gs` defined as pure modules to isolate business logic from I/O, enabling independent testing and simplified debugging.
-
-- `Seasonality_Rule_Active = FALSE` in CONFIG — rule present in architecture, inactive until 2-year data baseline is accumulated.
-
-- Unique point IDs (e.g., `PROC-TANK-01`) introduced to eliminate naming inconsistencies from previous manual spreadsheet.
-
-- Immutable RESULTS log: corrections made by adding new rows with correction flag, never by editing existing rows — compliant with ALCOA++ data integrity principles.
-
-### Design principles applied
-
-- **Single responsibility:** each module owns exactly one concern
-- **No magic numbers:** all thresholds and parameters live in CONFIG tab
-- **Pure logic separation:** business rules in Calculations.gs are testable without a Sheets environment
-- **Fail-safe defaults:** system logs and notifies on errors rather than silently failing
-- **Extensibility:** new sampling points added via SAMPLING_POINTS tab with no code changes required
+- Alert threshold (70%) and Critical threshold (300%) with auditable
+  technical justification.
+- Unique point IDs to eliminate naming inconsistencies.
+- Immutable RESULTS log — corrections via new rows, never edits.
+- Seasonality rule (T3) present in architecture, inactive until
+  2-year historical baseline is available.
 
 ---
 
