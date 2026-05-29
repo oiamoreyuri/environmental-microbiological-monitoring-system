@@ -1,43 +1,149 @@
+// =============================================================================
+// SamplingPoints.gs
+// Leitura e validação da aba SAMPLING_POINTS.
+// Dependências: Config.gs
+// Usada por: Results.gs, Schedule.gs, Calculations.gs
+// =============================================================================
+
+
+// Cache interno — evita múltiplas leituras na mesma execução.
+var _samplingPointsCache = null;
+
+
+/**
+ * Lê a aba SAMPLING_POINTS e retorna todos os pontos como array de objetos.
+ * Usa cache interno para evitar leituras repetidas do Sheets.
+ * @returns {Object[]}
+ */
+function _loadSamplingPoints() {
+  if (_samplingPointsCache !== null) return _samplingPointsCache;
+
+  try {
+    var sheet  = getSheet(SHEET_NAMES.SAMPLING_POINTS);
+    var data   = sheet.getDataRange().getValues();
+    var points = [];
+
+    // Linha 0 é cabeçalho — começa na linha 1
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+
+      // Ignora linhas completamente vazias
+      if (isEmpty(row[0])) continue;
+
+      points.push({
+        pointId:          String(row[0]).trim(),
+        sector:           String(row[1]).trim(),
+        zone:             String(row[2]).trim(),
+        collectionArea:   Number(row[3]),
+        fullName:         String(row[4]).trim(),
+        sampleType:       String(row[5]).trim(),
+        assays:           String(row[6]).trim(),
+        limitMA:          row[7] !== '' ? Number(row[7]) : null,
+        limitBL:          row[8] !== '' ? Number(row[8]) : null,
+        limitSAL:         row[9] !== '' ? String(row[9]).trim() : null,
+        frequency:        String(row[10]).trim(),
+        collectionMethod: String(row[11]).trim(),
+        active:           row[12] === true || String(row[12]).toUpperCase() === 'TRUE'
+      });
+    }
+
+    _samplingPointsCache = points;
+    return _samplingPointsCache;
+
+  } catch (e) {
+    logError('SamplingPoints', '_loadSamplingPoints', e);
+    throw e;
+  }
+}
+
+
 /**
  * Retorna os dados completos de um ponto de coleta pelo ID.
  * Retorna null se o ponto não for encontrado ou estiver inativo.
- * @param {string} pointId  Ex: 'PROC-TANK-01'
+ * @param  {string} pointId  Ex: 'PROC-TANK-01'
  * @returns {Object|null}
- * {
- *   pointId:         string,
- *   sector:          string,
- *   zone:            string,   — 'A', 'B' ou 'C'
- *   collectionArea:  number,   — 1, 2 ou 3
- *   fullName:        string,
- *   sampleType:      string,
- *   assays:          string,   — 'MA+BL', 'MA+BL+SAL', etc.
- *   limitMA:         number,
- *   limitBL:         number,
- *   limitSAL:        string,
- *   frequency:       string,
- *   collectionMethod:string,
- *   active:          boolean
- * }
  */
-function getPoint(pointId) {}
+function getPoint(pointId) {
+  if (isEmpty(pointId)) {
+    throw new Error('getPoint: pointId não pode ser vazio.');
+  }
+
+  var points = _loadSamplingPoints();
+  var point  = points.filter(function(p) {
+    return p.pointId === pointId && p.active;
+  });
+
+  return point.length > 0 ? point[0] : null;
+}
+
 
 /**
  * Retorna todos os pontos ativos.
- * @returns {Object[]}  Array de objetos no mesmo formato de getPoint()
+ * @returns {Object[]}
  */
-function getActivePoints() {}
+function getActivePoints() {
+  return _loadSamplingPoints().filter(function(p) {
+    return p.active;
+  });
+}
+
 
 /**
- * Retorna o limite aplicável a um ponto para um ensaio específico.
- * @param {string} pointId
- * @param {string} assay    'MA', 'BL' ou 'SAL'
- * @returns {number|string} Valor numérico ou 'Absent/10mL' para SAL
+ * Retorna o limite numérico de um ponto para um ensaio específico.
+ * Lança erro se o ensaio não for reconhecido ou o limite não estiver definido.
+ * @param  {string} pointId
+ * @param  {string} assay    'MA', 'BL' ou 'SAL'
+ * @returns {number|string}  Número para MA/BL, string 'Absent/10mL' para SAL
  */
-function getLimit(pointId, assay) {}
+function getLimit(pointId, assay) {
+  var point = getPoint(pointId);
+
+  if (!point) {
+    throw new Error('getLimit: ponto "' + pointId + '" não encontrado ou inativo.');
+  }
+
+  var assayUpper = assay.toUpperCase();
+
+  if (assayUpper === 'MA') {
+    if (point.limitMA === null) {
+      throw new Error('getLimit: limite MA não definido para o ponto "' + pointId + '".');
+    }
+    return point.limitMA;
+  }
+
+  if (assayUpper === 'BL') {
+    if (point.limitBL === null) {
+      throw new Error('getLimit: limite BL não definido para o ponto "' + pointId + '".');
+    }
+    return point.limitBL;
+  }
+
+  if (assayUpper === 'SAL') {
+    if (point.limitSAL === null) {
+      throw new Error('getLimit: limite SAL não definido para o ponto "' + pointId + '".');
+    }
+    return point.limitSAL;
+  }
+
+  throw new Error('getLimit: ensaio "' + assay + '" não reconhecido. Use MA, BL ou SAL.');
+}
+
 
 /**
  * Verifica se um pointId existe e está ativo.
- * @param {string} pointId
+ * @param  {string} pointId
  * @returns {boolean}
  */
-function isValidPoint(pointId) {}
+function isValidPoint(pointId) {
+  return getPoint(pointId) !== null;
+}
+
+
+/**
+ * Invalida o cache de pontos de coleta.
+ * Chamar quando a aba SAMPLING_POINTS for alterada durante a execução.
+ * @returns {void}
+ */
+function clearSamplingPointsCache() {
+  _samplingPointsCache = null;
+}
