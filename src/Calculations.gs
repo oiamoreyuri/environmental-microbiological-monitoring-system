@@ -91,7 +91,7 @@ function detectRecurrence(ncHistory, windowMonths) {
     return isNC && isWithinMonths(entry.date, windowMonths);
   });
 
-  return recentNCs.length >= 2;
+  return recentNCs.length;
 }
 
 
@@ -103,18 +103,34 @@ function detectRecurrence(ncHistory, windowMonths) {
  * @param  {boolean} hasRecurrence Flag de reincidência
  * @returns {string|null} 'Observation' | 'Resample' | 'CAPA' | null
  */
-function determineActionType(status, hasTrend, hasRecurrence) {
-  // Reincidência sempre abre CAPA, independente do status atual
-  if (hasRecurrence) return 'CAPA';
 
-  if (status === 'Critical')        return 'CAPA';
-  if (status === 'Non-Conforming')  return 'Resample';
-  if (status === 'Alert')           return 'Observation';
-  if (hasTrend)                     return 'Observation';
+/**
+ * Determina qual tipo de ação deve ser aberta para um dado status e flags.
+ * Regras de escalonamento:
+ * - Crítico ou Salmonella: CAPA imediata
+ * - 3+ NCs no mesmo ponto em 6 meses: CAPA por reincidência sistêmica
+ * - NC simples ou 2ª NC: Resample
+ * - Atenção ou tendência crescente: Observation
+ * @param  {string}  status        Status calculado do resultado
+ * @param  {boolean} hasTrend      Flag de tendência crescente
+ * @param  {number}  recentNcCount Quantidade de NCs no ponto nos últimos 6 meses
+ * @returns {string|null} 'Observation' | 'Resample' | 'CAPA' | null
+ */
+function determineActionType(status, hasTrend, recentNcCount) {
+  // Crítico (≥300% do limite) ou Salmonella — CAPA imediata
+  if (status === 'Critical') return 'CAPA';
+
+  // 3 ou mais NCs no período — falha sistêmica confirmada
+  if (recentNcCount >= 3) return 'CAPA';
+
+  // NC simples ou segunda NC — recoleta de confirmação
+  if (status === 'Non-Conforming') return 'Resample';
+
+  // Atenção ou tendência crescente — observação registrada
+  if (status === 'Alert' || hasTrend) return 'Observation';
 
   return null;
 }
-
 
 /**
  * Determina quais níveis de destinatários devem ser notificados.
@@ -122,23 +138,34 @@ function determineActionType(status, hasTrend, hasRecurrence) {
  * @param  {boolean} hasRecurrence
  * @returns {string[]}  Subconjunto de ['primary', 'production', 'manager1', 'manager2']
  */
-function determineRecipientLevels(status, hasRecurrence) {
-  // Salmonella ou Crítico: cadeia completa
+/**
+ * Determina quais níveis de destinatários devem ser notificados.
+ * @param  {string} status
+ * @param  {number} recentNcCount  Quantidade de NCs no ponto nos últimos 6 meses
+ * @returns {string[]}  Subconjunto de ['primary', 'production', 'manager1', 'manager2']
+ */
+function determineRecipientLevels(status, recentNcCount) {
+  // Crítico ou Salmonella — cadeia completa
   if (status === 'Critical') {
     return ['primary', 'production', 'manager1', 'manager2'];
   }
 
-  // NC com reincidência: sobe para manager1
-  if (status === 'Non-Conforming' && hasRecurrence) {
+  // 3ª NC ou mais — CAPA aberta, escala para manager1
+  if (recentNcCount >= 3) {
     return ['primary', 'production', 'manager1'];
   }
 
-  // NC simples: qualidade + produção
+  // 2ª NC — alerta para manager1 sem CAPA ainda
+  if (status === 'Non-Conforming' && recentNcCount >= 2) {
+    return ['primary', 'production', 'manager1'];
+  }
+
+  // 1ª NC — qualidade e produção
   if (status === 'Non-Conforming') {
     return ['primary', 'production'];
   }
 
-  // Atenção ou tendência: só qualidade
+  // Atenção ou tendência — só qualidade
   if (status === 'Alert') {
     return ['primary'];
   }

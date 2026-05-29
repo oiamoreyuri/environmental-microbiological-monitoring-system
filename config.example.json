@@ -22,13 +22,19 @@
     "unit": "business days"
   },
 
+  "CAPA_Deadline_Days": {
+    "type": "number",
+    "description": "Number of calendar days to complete a CAPA after it is opened. Applies to Critical results, Salmonella detection, and points with 3+ NCs within the recurrence window.",
+    "example": 30,
+    "unit": "calendar days"
+  },
+
   "Recurrence_Window_Months": {
     "type": "number",
-    "description": "Time window (in months) used to detect recurrence. If 2 or more Non-Conforming results exist for the same point within this window, a recurrence flag is raised.",
+    "description": "Time window (in months) used to evaluate NC recurrence. 2 NCs within this window escalate notifications to manager level. 3 NCs within this window trigger mandatory CAPA.",
     "example": 6,
     "unit": "months"
   },
-
   "Trend_Consecutive_N": {
     "type": "number",
     "description": "Number of consecutive increasing results required to trigger the upward trend flag at a sampling point.",
