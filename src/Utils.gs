@@ -58,8 +58,7 @@ function _getHolidaysFromSheet() {
     var sheet = ss.getSheetByName('HOLIDAYS');
 
     if (!sheet) {
-      console.warn('Utils._getHolidaysFromSheet: aba HOLIDAYS não encontrada. Nenhum feriado será considerado.');
-      return [];
+      throw new Error('Utils._getHolidaysFromSheet: aba HOLIDAYS não encontrada. Crie a aba e preencha os feriados do ano atual.');
     }
 
     var data     = sheet.getDataRange().getValues();
