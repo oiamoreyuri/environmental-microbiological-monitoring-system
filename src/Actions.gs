@@ -41,11 +41,19 @@ function openAction(originResultId, actionType, responsible, description) {
     var openedDate  = new Date();
     var deadlineDays = Number(getParam('Resample_Deadline_Days'));
 
-    // Prazo só se aplica a Resample — Observation e CAPA têm prazo livre
-    var deadline = (actionType === 'Resample')
-      ? addBusinessDays(openedDate, deadlineDays)
-      : '';
-
+    // Resample: prazo em dias úteis (Resample_Deadline_Days)
+    // CAPA: prazo em dias corridos (CAPA_Deadline_Days)
+    // Observation: sem prazo automático
+    var deadline = '';
+    if (actionType === 'Resample') {
+      var resampleDays = Number(getParam('Resample_Deadline_Days'));
+      deadline = addBusinessDays(openedDate, resampleDays);
+    } else if (actionType === 'CAPA') {
+      var capaDays = Number(getParam('CAPA_Deadline_Days'));
+      var capaDeadline = new Date(openedDate);
+      capaDeadline.setDate(capaDeadline.getDate() + capaDays);
+      deadline = capaDeadline;
+    }
     var sheet = getSheet(SHEET_NAMES.ACTIONS);
 
     sheet.appendRow([
