@@ -54,9 +54,8 @@ function _toDateKey(date) {
  */
 function _getHolidaysFromSheet() {
   try {
-    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var ss    = _getSpreadsheet();
     var sheet = ss.getSheetByName('HOLIDAYS');
-
     if (!sheet) {
       throw new Error('Utils._getHolidaysFromSheet: aba HOLIDAYS não encontrada. Crie a aba e preencha os feriados do ano atual.');
     }
