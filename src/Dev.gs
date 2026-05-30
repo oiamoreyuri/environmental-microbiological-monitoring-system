@@ -20,15 +20,10 @@ function _devTestConnection() {
 }
 
 
-/**
- * Testa o fluxo completo com um resultado fictício.
- * Requer pelo menos um ponto cadastrado em SAMPLING_POINTS.
- * @returns {void}
- */
 function _devTestSubmission() {
   var testData = {
-    pointId:        'REPLACE-WITH-REAL-POINT-ID',
-    collectionDate: new Date(),
+    pointId:        'DESP-CIL-LAV-01',
+    collectionDate: new Date('2026-05-30'),
     assay:          'MA',
     result:         55,
     analyst:        'test@yourcompany.com',
@@ -38,7 +33,6 @@ function _devTestSubmission() {
   processFormSubmission(testData);
   Logger.log('Dev test completed. Check RESULTS, ACTIONS and SYSTEM_LOG tabs.');
 }
-
 
 /**
  * Lista todos os parâmetros da aba CONFIG no log.
