@@ -108,10 +108,9 @@ function getAllParams() {
 
       if (isEmpty(key)) continue;
 
-      if (String(value).toUpperCase() === 'TRUE')  value = true;
-      if (String(value).toUpperCase() === 'FALSE') value = false;
-      if (!isNaN(value) && value !== '')           value = Number(value);
-
+      if (value === true  || String(value).toUpperCase() === 'TRUE')  value = true;
+      else if (value === false || String(value).toUpperCase() === 'FALSE') value = false;
+      else if (!isNaN(value) && value !== '') value = Number(value);
       params[key] = value;
     }
 
