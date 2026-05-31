@@ -232,10 +232,12 @@ function monthlyReport() {
  * @returns {void}
  */
 function generateNewYearSchedule() {
+  // Só executa em janeiro — trigger é mensal mas cronograma só é gerado uma vez por ano
+  if (new Date().getMonth() !== 0) return;
+
   try {
     var year  = new Date().getFullYear();
     var count = generateAnnualSchedule(year);
-
     writeLog({
       event:           'Annual schedule generated',
       referenceId:     String(year),
@@ -267,13 +269,16 @@ function installTriggers() {
     ScriptApp.deleteTrigger(trigger);
   });
 
-  // Trigger do Forms — dispara a cada submissão
-  // ATENÇÃO: substituir pelo ID real do seu Google Forms
-  // ScriptApp.newTrigger('onFormSubmit')
-  //   .forForm('SEU_FORM_ID_AQUI')
-  //   .onFormSubmit()
-  //   .create();
-
+// Trigger do Forms — dispara a cada submissão
+  var formId = PropertiesService.getScriptProperties().getProperty('FORM_ID');
+  if (!formId) {
+    throw new Error('installTriggers: FORM_ID não configurado. Execute setFormId("SEU_FORM_ID") primeiro.');
+  }
+  ScriptApp.newTrigger('onFormSubmit')
+    .forForm(formId)
+    .onFormSubmit()
+    .create();
+      
   // Trigger diário — 08:00
   ScriptApp.newTrigger('dailyCheck')
     .timeBased()
@@ -288,14 +293,13 @@ function installTriggers() {
     .atHour(7)
     .create();
 
-  // Trigger anual — 1º de janeiro às 06:00
+// Trigger mensal — roda no dia 1 de cada mês às 06:00
+  // generateNewYearSchedule verifica internamente se é janeiro
   ScriptApp.newTrigger('generateNewYearSchedule')
     .timeBased()
     .onMonthDay(1)
-    .inMonth(ScriptApp.Month.JANUARY)
     .atHour(6)
-    .create();
-
+    .create(); 
   writeLog({
     event:           'Triggers installed',
     referenceId:     'installTriggers',

@@ -44,6 +44,16 @@ function setSpreadsheetId(id) {
   Logger.log('Spreadsheet ID saved: ' + id);
 }
 
+/**
+ * Define o ID do formulário via PropertiesService.
+ * Executar manualmente UMA ÚNICA VEZ após criar o formulário.
+ * @param  {string} id  ID do formulário (da URL do Forms)
+ * @returns {void}
+ */
+function setFormId(id) {
+  PropertiesService.getScriptProperties().setProperty('FORM_ID', id);
+  Logger.log('Form ID saved: ' + id);
+}
 
 /**
  * Retorna a instância do Spreadsheet pelo ID armazenado no PropertiesService.
