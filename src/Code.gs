@@ -33,39 +33,82 @@ function onFormSubmit(e) {
  * Extrai e normaliza os dados do evento do Forms.
  * Ordem das colunas (e.values):
  *   0 — Timestamp (gerado automaticamente pelo Forms)
- *   1 — Point ID
- *   2 — Collection Date (DD/MM/YYYY)
- *   3 — Assay (MA / BL / SAL)
- *   4 — Result
- *   5 — Analyst
- *   6 — Notes (opcional)
+ *   1 — Setor (nome em português, ex: 'SD 1')
+ *   2 — Ponto de Coleta (nome completo em português, ex: 'Câmara de Secagem')
+ *   3 — Data da Coleta (DD/MM/YYYY)
+ *   4 — Ensaio (MA / BL / SAL)
+ *   5 — Resultado
+ *   6 — Analista Responsável
+ *   7 — Observações (opcional)
  * @param  {Object} e  Evento do Forms
  * @returns {Object}   formData normalizado
  */
 function _extractFormData(e) {
   var values = e.values;
 
-  if (!values || values.length < 6) {
+  if (!values || values.length < 7) {
     throw new Error('_extractFormData: evento do Forms com dados insuficientes.');
   }
 
   // Converte data do formato DD/MM/YYYY para objeto Date
-  var rawDate = String(values[2]).trim();
+  var rawDate   = String(values[3]).trim();
   var dateParts = rawDate.split('/');
   var collectionDate = (dateParts.length === 3)
     ? new Date(dateParts[2], dateParts[1] - 1, dateParts[0])
     : new Date(rawDate);
 
+  // Resolve o POINT_ID a partir do setor e nome do ponto
+  var sector    = String(values[1]).trim();
+  var pointName = String(values[2]).trim();
+  var pointId   = _resolvePointId(sector, pointName);
+
+  if (!pointId) {
+    throw new Error(
+      '_extractFormData: ponto "' + pointName + '" não encontrado no setor "' + sector + '".'
+    );
+  }
+
   return {
-    pointId:        String(values[1]).trim(),
+    pointId:        pointId,
     collectionDate: collectionDate,
-    assay:          String(values[3]).trim().toUpperCase(),
-    result:         Number(values[4]),
-    analyst:        String(values[5]).trim(),
-    notes:          values[6] ? String(values[6]).trim() : ''
+    assay:          String(values[4]).trim().toUpperCase(),
+    result:         Number(values[5]),
+    analyst:        String(values[6]).trim(),
+    notes:          values[7] ? String(values[7]).trim() : ''
   };
 }
 
+
+/**
+ * Resolve o POINT_ID a partir do setor e nome completo do ponto.
+ * Busca na aba SAMPLING_POINTS por correspondência exata de setor e nome.
+ * @param  {string} sector     Nome do setor em português (ex: 'SD 1')
+ * @param  {string} pointName  Nome completo do ponto (ex: 'Câmara de Secagem')
+ * @returns {string|null}      POINT_ID ou null se não encontrado
+ */
+function _resolvePointId(sector, pointName) {
+  try {
+    var points = getActivePoints();
+
+    // Busca por correspondência exata de setor e nome
+    var found = points.filter(function(p) {
+      return p.sector.trim() === sector && p.fullName.trim() === pointName;
+    });
+
+    if (found.length > 0) return found[0].pointId;
+
+    // Fallback: busca só pelo nome (caso setor venha ligeiramente diferente)
+    found = points.filter(function(p) {
+      return p.fullName.trim() === pointName;
+    });
+
+    return found.length > 0 ? found[0].pointId : null;
+
+  } catch (e) {
+    logError('Code', '_resolvePointId', e);
+    return null;
+  }
+}
 
 // =============================================================================
 // TRIGGERS TEMPORAIS
