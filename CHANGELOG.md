@@ -6,6 +6,58 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.1] — 2026-06-02
+
+### Fixed
+
+**UTC timezone date serialization — Collection_Date gravava dia anterior**
+
+Google Apps Script serializa objetos `Date` em UTC ao passá-los para `appendRow()`.
+No fuso UTC-3 (America/Sao_Paulo), uma data criada à meia-noite local era interpretada
+como 21:00 do dia anterior em UTC, e o Sheets gravava o dia errado.
+
+Duas correções foram aplicadas:
+
+#### Code.gs — `_extractFormData()`
+
+- **Causa raiz:** O Google Forms Date picker retorna a data via `getResponse()` no
+  formato ISO `YYYY-MM-DD` (com traço). O parser só tratava `DD/MM/YYYY` (com barra)
+  via `split('/')`. Com apenas 1 parte, caía no fallback `new Date("YYYY-MM-DD")`,
+  que o V8 interpreta como meia-noite UTC → 21:00 do dia anterior em UTC-3.
+- **Correção:** Adicionado parsing explícito para formato ISO (`split('-')`), com
+  construção de Date ao meio-dia (`12, 0, 0`) em todos os caminhos.
+- **Safety net:** `setHours(12, 0, 0, 0)` aplicado após qualquer branch de parsing,
+  garantindo que offsets negativos nunca cruzem a fronteira do dia.
+
+#### Results.gs — `writeResult()`
+
+- **Causa raiz:** `record.collectionDate` (objeto Date) era passado diretamente para
+  `appendRow()`, onde o Sheets serializa em UTC.
+- **Correção:** Adicionado type guard com `formatDate()` para converter Date válido
+  em string `DD/MM/YYYY` antes da gravação. Valores não-Date passam inalterados
+  para evitar quebra por tipo inesperado.
+
+```javascript
+// Antes (gravava dia anterior em UTC-3):
+record.collectionDate,  // Collection_Date
+
+// Depois:
+(record.collectionDate instanceof Date && !isNaN(record.collectionDate))
+  ? formatDate(record.collectionDate)
+  : record.collectionDate,  // Collection_Date
+```
+
+### Verificação
+
+- Submetido Forms com data 02/06/2026 após fix.
+- Confirmado no RESULTS: `Collection_Date = 02/06/2026` ✓
+- Confirmado: `COLLECTION_ID = UNSCHEDULED-02/06/2026` ✓
+
+### Backlog registrado
+- Importação de dados históricos (2025 e 2026 pré-sistema): pendente para após release 1.0.0. Ver CONTEXT.md para detalhes da abordagem.
+
+---
+
 ## [0.2.0] — 2026-05-29
 
 ### Added

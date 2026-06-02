@@ -196,7 +196,7 @@ Use `config.example.json` as a reference for the CONFIG tab structure without an
 
 ## Current development state
 
-Phase: **Module interface definition**
+Phase: **Initial integration testing**
 
 Completed:
 - [x] Problem definition and requirements analysis
@@ -205,17 +205,40 @@ Completed:
 - [x] Module architecture (11 .gs files with single responsibilities)
 - [x] Business logic definition (status classification, trend rules, KPIs)
 - [x] Repository documentation (README, CONTEXT, CHANGELOG)
+- [x] Implement all 11 modules (v0.2.0)
+- [x] Create Google Form for data entry
+- [x] Link Forms trigger to Apps Script
+- [x] clasp push and initial Form submission tests
+- [x] Fix UTC date serialization bug (v0.2.1)
 
 Next steps:
-- [ ] Define public interfaces for all 11 modules
-- [ ] Implement Config.gs and Utils.gs
-- [ ] Implement SamplingPoints.gs
-- [ ] Implement Calculations.gs (pure logic, no I/O)
-- [ ] Implement Results.gs + onFormSubmit trigger
-- [ ] Implement remaining modules
-- [ ] Build Google Form for data entry
-- [ ] Connect Looker Studio to Sheets
-- [ ] Generate monthly report PDF
+- [ ] Populate SAMPLING_POINTS tab with all real points
+- [ ] Populate HOLIDAYS tab (2025 and 2026)
+- [ ] Populate CONFIG tab with operational parameters
+- [ ] End-to-end tests with real data
+- [ ] Connect Looker Studio dashboard
+- [ ] Revise PS.LAB. 02 to Rev. 05
+- [ ] Final documentation and v1.0.0 release
+
+---
+
+## Known gotchas
+
+### UTC date serialization (fixed in v0.2.1)
+
+Google Apps Script serializes `Date` objects in UTC when passed to `appendRow()`.
+In UTC-3 (America/Sao_Paulo), midnight local time becomes 21:00 of the previous day
+in UTC. Two safeguards are in place:
+
+1. **Code.gs `_extractFormData()`** — Parses dates with `setHours(12, 0, 0, 0)` to
+   prevent timezone offsets from crossing the day boundary. Handles both `DD/MM/YYYY`
+   and `YYYY-MM-DD` (ISO format from Google Forms Date picker).
+
+2. **Results.gs `writeResult()`** — Formats `collectionDate` as `DD/MM/YYYY` string
+   via `formatDate()` before `appendRow()`, bypassing Sheets UTC serialization entirely.
+
+**Rule:** Never pass a raw `Date` object representing a calendar date (without time
+significance) directly to `appendRow()`. Always format as string first.
 
 ---
 
@@ -223,3 +246,16 @@ Next steps:
 
 This system follows the same architectural conventions as the author's equipment monitoring automation system:
 https://github.com/oiamoreyuri/environmental-monitoring-automation-system
+
+---
+
+## Backlog técnico
+
+### Importação de dados históricos
+- Escopo: dados de monitoramento ambiental de 2025 e do período de 2026 anterior ao go-live do sistema
+- Fonte: planilhas Excel existentes, dados não padronizados
+- Abordagem planejada: criar função _devImportHistorical() no Dev.gs que leia uma aba de staging no Sheets e chame writeResult diretamente para cada linha, sem passar pelo pipeline do Forms
+- COLLECTION_ID dos registros históricos será prefixado com HISTORICAL- para distinguir de coletas normais
+- Colunas necessárias na planilha de staging: POINT_ID, Collection_Date, Assay, Result, Analyst
+- Pré-requisito: limpeza e padronização manual da planilha histórica
+- Status: pendente, executar após release 1.0.0
