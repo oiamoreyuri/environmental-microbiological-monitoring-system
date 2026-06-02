@@ -44,23 +44,85 @@ function onFormSubmit(e) {
  * @returns {Object}   formData normalizado
  */
 function _extractFormData(e) {
-  var values = e.values;
+  // Lê o FormResponse do evento (trigger programático de Form)
+  var response = e.response;
+  if (!response) {
+    throw new Error('_extractFormData: evento sem FormResponse. Verifique o tipo de trigger.');
+  }
 
-  if (!values || values.length < 7) {
-    throw new Error('_extractFormData: evento do Forms com dados insuficientes.');
+  // Monta dicionário normalizado: titulo_normalizado -> {titulo_original, resposta}
+  // Normalização: lowercase + trim + colapso de espaços internos
+  // Objetivo: absorver variações de capitalização ou espaço acidental nos títulos do Forms
+  var itemResponses = response.getItemResponses();
+  var data = {};
+  var titlesFound = []; // para log de diagnóstico em caso de falha
+
+  itemResponses.forEach(function (itemResponse) {
+    var originalTitle = itemResponse.getItem().getTitle();
+    var normalizedTitle = originalTitle.trim().toLowerCase().replace(/\s+/g, ' ');
+    var value = itemResponse.getResponse();
+    data[normalizedTitle] = {
+      original: originalTitle,
+      value: (value !== null && value !== undefined) ? String(value).trim() : ''
+    };
+    titlesFound.push('"' + originalTitle + '"');
+  });
+
+  // Mapa de campos esperados: chave interna -> título normalizado esperado
+  var fieldMap = {
+    sector: 'setor',
+    pointName: 'ponto de coleta',
+    collectionDate: 'data da coleta',
+    assay: 'ensaio',
+    result: 'resultado (ufc/ml)',
+    analyst: 'analista responsável',
+    observations: 'observações'
+  };
+
+  // Valida campos obrigatórios (observações é opcional)
+  var requiredFields = ['sector', 'pointName', 'collectionDate', 'assay', 'result', 'analyst'];
+  var missingFields = [];
+
+  requiredFields.forEach(function (key) {
+    var normalizedTitle = fieldMap[key];
+    if (!data[normalizedTitle] || data[normalizedTitle].value === '') {
+      missingFields.push(fieldMap[key]);
+    }
+  });
+
+  if (missingFields.length > 0) {
+    // Log diagnóstico: despeja títulos capturados para facilitar auditoria
+    writeErrorLog(
+      'Code',
+      '_extractFormData',
+      'Campos obrigatórios ausentes: [' + missingFields.join(', ') + ']. ' +
+      'Títulos recebidos no evento: [' + titlesFound.join(', ') + '].'
+    );
+    throw new Error(
+      '_extractFormData: campos obrigatórios ausentes: [' + missingFields.join(', ') + '].'
+    );
   }
 
   // Converte data do formato DD/MM/YYYY para objeto Date
-  var rawDate   = String(values[3]).trim();
+  var rawDate = data[fieldMap.collectionDate].value;
   var dateParts = rawDate.split('/');
   var collectionDate = (dateParts.length === 3)
     ? new Date(dateParts[2], dateParts[1] - 1, dateParts[0])
     : new Date(rawDate);
 
+  // Converte e valida resultado numérico
+  var rawResult = data[fieldMap.result].value.replace(',', '.');
+  var result = parseFloat(rawResult);
+  if (isNaN(result)) {
+    throw new Error(
+      '_extractFormData: resultado numérico inválido: "' + data[fieldMap.result].value + '".'
+    );
+  }
+
   // Resolve o POINT_ID a partir do setor e nome do ponto
-  var sector    = String(values[1]).trim();
-  var pointName = String(values[2]).trim();
-  var pointId   = _resolvePointId(sector, pointName);
+  var sector = data[fieldMap.sector].value;
+  var pointName = data[fieldMap.pointName].value;
+  var pointId = _resolvePointId(sector, pointName);
 
   if (!pointId) {
     throw new Error(
@@ -68,16 +130,18 @@ function _extractFormData(e) {
     );
   }
 
+  // Retorna objeto estruturado para processFormSubmission
   return {
-    pointId:        pointId,
+    pointId: pointId,
+    sector: sector,
+    pointName: pointName,
     collectionDate: collectionDate,
-    assay:          String(values[4]).trim().toUpperCase(),
-    result:         Number(values[5]),
-    analyst:        String(values[6]).trim(),
-    notes:          values[7] ? String(values[7]).trim() : ''
+    assay: data[fieldMap.assay].value,
+    result: result,
+    analyst: data[fieldMap.analyst].value,
+    observations: data[fieldMap.observations] ? data[fieldMap.observations].value : ''
   };
 }
-
 
 /**
  * Resolve o POINT_ID a partir do setor e nome completo do ponto.
@@ -91,14 +155,14 @@ function _resolvePointId(sector, pointName) {
     var points = getActivePoints();
 
     // Busca por correspondência exata de setor e nome
-    var found = points.filter(function(p) {
+    var found = points.filter(function (p) {
       return p.sector.trim() === sector && p.fullName.trim() === pointName;
     });
 
     if (found.length > 0) return found[0].pointId;
 
     // Fallback: busca só pelo nome (caso setor venha ligeiramente diferente)
-    found = points.filter(function(p) {
+    found = points.filter(function (p) {
       return p.fullName.trim() === pointName;
     });
 
@@ -140,12 +204,12 @@ function dailyCheck() {
     _checkHolidayReminder(params);
 
     writeLog({
-      event:           'Daily check completed',
-      referenceId:     formatDate(new Date()),
+      event: 'Daily check completed',
+      referenceId: formatDate(new Date()),
       generatedStatus: overdueCollections.length + ' overdue collections, ' +
-                       overdueActions.length + ' overdue actions',
+        overdueActions.length + ' overdue actions',
       triggeredAction: 'Alerts sent if applicable',
-      user:            'system'
+      user: 'system'
     });
 
   } catch (e) {
@@ -164,9 +228,9 @@ function dailyCheck() {
  */
 function _checkHolidayReminder(params) {
   try {
-    var year  = new Date().getFullYear();
+    var year = new Date().getFullYear();
     var sheet = getSheet(SHEET_NAMES.HOLIDAYS);
-    var data  = sheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
     var hasCurrentYear = false;
 
     for (var i = 1; i < data.length; i++) {
@@ -196,27 +260,27 @@ function _checkHolidayReminder(params) {
 function monthlyReport() {
   try {
     // Relatório do mês anterior
-    var now       = new Date();
+    var now = new Date();
     var lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    var month     = lastMonth.getMonth() + 1;
-    var year      = lastMonth.getFullYear();
+    var month = lastMonth.getMonth() + 1;
+    var year = lastMonth.getFullYear();
 
     var pdfUrl = generateMonthlyReport(month, year);
 
     var monthNames = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December'
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
     ];
     var monthLabel = monthNames[month - 1] + ' ' + year;
 
     sendMonthlyReport(monthLabel, pdfUrl, ['primary', 'manager1']);
 
     writeLog({
-      event:           'Monthly report sent',
-      referenceId:     monthLabel,
+      event: 'Monthly report sent',
+      referenceId: monthLabel,
       generatedStatus: 'PDF generated and emailed',
       triggeredAction: pdfUrl,
-      user:            'system'
+      user: 'system'
     });
 
   } catch (e) {
@@ -236,14 +300,14 @@ function generateNewYearSchedule() {
   if (new Date().getMonth() !== 0) return;
 
   try {
-    var year  = new Date().getFullYear();
+    var year = new Date().getFullYear();
     var count = generateAnnualSchedule(year);
     writeLog({
-      event:           'Annual schedule generated',
-      referenceId:     String(year),
+      event: 'Annual schedule generated',
+      referenceId: String(year),
       generatedStatus: count + ' collections planned',
       triggeredAction: 'Schedule ready for ' + year,
-      user:            'system'
+      user: 'system'
     });
 
   } catch (e) {
@@ -265,11 +329,11 @@ function generateNewYearSchedule() {
  */
 function installTriggers() {
   // Remove triggers existentes para evitar duplicatas
-  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
     ScriptApp.deleteTrigger(trigger);
   });
 
-// Trigger do Forms — dispara a cada submissão
+  // Trigger do Forms — dispara a cada submissão
   var formId = PropertiesService.getScriptProperties().getProperty('FORM_ID');
   if (!formId) {
     throw new Error('installTriggers: FORM_ID não configurado. Execute setFormId("SEU_FORM_ID") primeiro.');
@@ -278,7 +342,7 @@ function installTriggers() {
     .forForm(formId)
     .onFormSubmit()
     .create();
-      
+
   // Trigger diário — 08:00
   ScriptApp.newTrigger('dailyCheck')
     .timeBased()
@@ -293,18 +357,18 @@ function installTriggers() {
     .atHour(7)
     .create();
 
-// Trigger mensal — roda no dia 1 de cada mês às 06:00
+  // Trigger mensal — roda no dia 1 de cada mês às 06:00
   // generateNewYearSchedule verifica internamente se é janeiro
   ScriptApp.newTrigger('generateNewYearSchedule')
     .timeBased()
     .onMonthDay(1)
     .atHour(6)
-    .create(); 
+    .create();
   writeLog({
-    event:           'Triggers installed',
-    referenceId:     'installTriggers',
+    event: 'Triggers installed',
+    referenceId: 'installTriggers',
     generatedStatus: 'dailyCheck + monthlyReport + generateNewYearSchedule',
     triggeredAction: 'Forms trigger requires manual setup with Form ID',
-    user:            'system'
+    user: 'system'
   });
 }
