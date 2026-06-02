@@ -103,12 +103,42 @@ function _extractFormData(e) {
     );
   }
 
-  // Converte data do formato DD/MM/YYYY para objeto Date
+  // Converte data para objeto Date — Google Forms pode retornar DD/MM/YYYY ou YYYY-MM-DD
   var rawDate = data[fieldMap.collectionDate].value;
-  var dateParts = rawDate.split('/');
-  var collectionDate = (dateParts.length === 3)
-    ? new Date(dateParts[2], dateParts[1] - 1, dateParts[0])
-    : new Date(rawDate);
+  var collectionDate;
+  var slashParts = rawDate.split('/');
+  var dashParts = rawDate.split('-');
+
+  if (slashParts.length === 3) {
+    // DD/MM/YYYY
+    collectionDate = new Date(
+      parseInt(slashParts[2], 10),
+      parseInt(slashParts[1], 10) - 1,
+      parseInt(slashParts[0], 10),
+      12, 0, 0
+    );
+  } else if (dashParts.length === 3) {
+    // YYYY-MM-DD (ISO — formato padrão do Forms Date picker)
+    collectionDate = new Date(
+      parseInt(dashParts[0], 10),
+      parseInt(dashParts[1], 10) - 1,
+      parseInt(dashParts[2], 10),
+      12, 0, 0
+    );
+  } else {
+    collectionDate = new Date(rawDate);
+  }
+
+  // Safety net: força meio-dia para evitar que offset UTC-3 cruze o dia
+  if (!isNaN(collectionDate.getTime())) {
+    collectionDate.setHours(12, 0, 0, 0);
+  }
+
+  if (isNaN(collectionDate.getTime())) {
+    throw new Error(
+      '_extractFormData: data inválida recebida: "' + rawDate + '". Formato esperado: DD/MM/YYYY.'
+    );
+  }
 
   // Converte e valida resultado numérico
   var rawResult = data[fieldMap.result].value.replace(',', '.');
