@@ -110,7 +110,9 @@ function writeResult(record) {
       record.collectionId,    // COLLECTION_ID
       record.pointId,         // POINT_ID
       record.timestamp,       // Timestamp
-      record.collectionDate,  // Collection_Date
+      (record.collectionDate instanceof Date && !isNaN(record.collectionDate))
+        ? formatDate(record.collectionDate)
+        : record.collectionDate,  // Collection_Date
       record.assay,           // Assay
       record.result,          // Result
       record.unit,            // Unit
