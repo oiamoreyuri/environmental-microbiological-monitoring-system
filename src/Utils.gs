@@ -1,7 +1,7 @@
 // =============================================================================
 // Utils.gs
 // Funções utilitárias reutilizáveis.
-// Sem dependências de outros módulos.
+// Sem dependências de outros módulos (exceto Config.gs para _getSpreadsheet e SHEET_NAMES).
 // Usada por: todos os módulos.
 // =============================================================================
 
@@ -46,19 +46,22 @@ function _toDateKey(date) {
 }
 
 
+// Cache interno — evita múltiplas leituras da aba HOLIDAYS na mesma execução.
+var _holidaysCache = null;
+
+
 /**
  * Lê a aba HOLIDAYS do Sheets e retorna um array de strings 'YYYY-MM-DD'.
  * A aba deve ter: coluna A = data (Date), coluna B = descrição (texto).
  * A primeira linha é ignorada (cabeçalho).
+ * Usa cache em memória para evitar leituras repetidas do Sheets.
  * @returns {string[]}  Ex: ['2025-01-01', '2025-04-18', ...]
  */
 function _getHolidaysFromSheet() {
+  if (_holidaysCache !== null) return _holidaysCache;
+
   try {
-    var ss    = _getSpreadsheet();
-    var sheet = ss.getSheetByName('HOLIDAYS');
-    if (!sheet) {
-      throw new Error('Utils._getHolidaysFromSheet: aba HOLIDAYS não encontrada. Crie a aba e preencha os feriados do ano atual.');
-    }
+    var sheet = getSheet(SHEET_NAMES.HOLIDAYS);
 
     var data     = sheet.getDataRange().getValues();
     var holidays = [];
@@ -75,7 +78,8 @@ function _getHolidaysFromSheet() {
       }
     }
 
-    return holidays;
+    _holidaysCache = holidays;
+    return _holidaysCache;
 
   } catch (e) {
     logError('Utils', '_getHolidaysFromSheet', e);

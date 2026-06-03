@@ -12,42 +12,58 @@
  * Datas que caem em fim de semana ou feriado são movidas
  * para o próximo dia útil.
  * @param  {number} year
- * @param  {string} frequency  'Monthly' | 'Bimonthly' | 'Quarterly' | 'Biannual'
+ * @param  {string} frequency  'Monthly' | 'Bimonthly' | 'Quarterly' | 'Biannual' | 'Biweekly'
  * @returns {Date[]}
  */
 function _calculatePlannedDates(year, frequency) {
   var months = [];
 
+  // Biweekly: duas coletas por mês — dia 15 e último dia do mês
+  if (frequency === 'Biweekly') {
+    var dates = [];
+    for (var m = 0; m < 12; m++) {
+      // Primeira quinzena: dia 15
+      var mid = new Date(year, m, 15);
+      while (isNonWorkingDay(mid)) {
+        mid.setDate(mid.getDate() + 1);
+      }
+      dates.push(mid);
+
+      // Segunda quinzena: último dia do mês
+      var end = new Date(year, m + 1, 0);
+      while (isNonWorkingDay(end)) {
+        end.setDate(end.getDate() + 1);
+      }
+      dates.push(end);
+    }
+    return dates;
+  }
+
   switch (frequency) {
     case 'Monthly':
-      months = [0,1,2,3,4,5,6,7,8,9,10,11];
+      months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
       break;
     case 'Bimonthly':
-      months = [0,2,4,6,8,10];
+      months = [0, 2, 4, 6, 8, 10];
       break;
     case 'Quarterly':
-      months = [0,3,6,9];
+      months = [0, 3, 6, 9];
       break;
     case 'Biannual':
-      months = [0,6];
+      months = [0, 6];
       break;
     default:
       throw new Error('_calculatePlannedDates: frequência "' + frequency + '" não reconhecida.');
   }
 
-  return months.map(function(month) {
-    // Último dia do mês como data base
+  return months.map(function (month) {
     var lastDay = new Date(year, month + 1, 0);
-
-    // Se cair em fim de semana ou feriado, avança para o próximo dia útil
     while (isNonWorkingDay(lastDay)) {
       lastDay.setDate(lastDay.getDate() + 1);
     }
-
     return lastDay;
   });
 }
-
 
 /**
  * Gera o ID de coleta no formato ANO-POINTID-SEQ.
@@ -75,14 +91,14 @@ function generateAnnualSchedule(year) {
   }
 
   try {
-    var sheet  = getSheet(SHEET_NAMES.SCHEDULE);
+    var sheet = getSheet(SHEET_NAMES.SCHEDULE);
     var points = getActivePoints();
-    var rows   = [];
+    var rows = [];
 
-    points.forEach(function(point) {
+    points.forEach(function (point) {
       var dates = _calculatePlannedDates(year, point.frequency);
 
-      dates.forEach(function(date, index) {
+      dates.forEach(function (date, index) {
         var collectionId = _generateCollectionId(year, point.pointId, index + 1);
 
         rows.push([
@@ -110,11 +126,11 @@ function generateAnnualSchedule(year) {
     }
 
     writeLog({
-      event:           'Annual schedule generated',
-      referenceId:     String(year),
+      event: 'Annual schedule generated',
+      referenceId: String(year),
       generatedStatus: rows.length + ' collection(s) planned',
       triggeredAction: points.length + ' active point(s)',
-      user:            'system'
+      user: 'system'
     });
 
     return rows.length;
@@ -134,8 +150,8 @@ function generateAnnualSchedule(year) {
  * @returns {void}
  */
 function _deleteYearRows(sheet, year) {
-  var data    = sheet.getDataRange().getValues();
-  var prefix  = String(year) + '-';
+  var data = sheet.getDataRange().getValues();
+  var prefix = String(year) + '-';
   var toDelete = [];
 
   // Percorre de trás para frente para não deslocar índices ao deletar
@@ -145,7 +161,7 @@ function _deleteYearRows(sheet, year) {
     }
   }
 
-  toDelete.forEach(function(rowIndex) {
+  toDelete.forEach(function (rowIndex) {
     sheet.deleteRow(rowIndex);
   });
 }
@@ -165,13 +181,13 @@ function markAsCollected(collectionId, actualDate, collector) {
 
   try {
     var sheet = getSheet(SHEET_NAMES.SCHEDULE);
-    var data  = sheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]) === collectionId) {
-        var row         = i + 1;
+        var row = i + 1;
         var plannedDate = data[i][4];
-        var delayDays   = 0;
+        var delayDays = 0;
 
         if (plannedDate instanceof Date && actualDate instanceof Date) {
           var diff = actualDate.getTime() - plannedDate.getTime();
@@ -205,13 +221,13 @@ function markAsCollected(collectionId, actualDate, collector) {
 function getOverdueCollections() {
   try {
     var sheet = getSheet(SHEET_NAMES.SCHEDULE);
-    var data  = sheet.getDataRange().getValues();
+    var data = sheet.getDataRange().getValues();
     var today = new Date();
     today.setHours(0, 0, 0, 0);
     var overdue = [];
 
     for (var i = 1; i < data.length; i++) {
-      var status      = String(data[i][7]);
+      var status = String(data[i][7]);
       var plannedDate = data[i][4];
 
       if (status !== 'Planned') continue;
@@ -225,11 +241,11 @@ function getOverdueCollections() {
 
         overdue.push({
           collectionId: String(data[i][0]),
-          pointId:      String(data[i][1]),
-          sector:       String(data[i][2]),
-          fullName:     String(data[i][3]),
-          plannedDate:  formatDate(plannedDate),
-          delayDays:    delayDays
+          pointId: String(data[i][1]),
+          sector: String(data[i][2]),
+          fullName: String(data[i][3]),
+          plannedDate: formatDate(plannedDate),
+          delayDays: delayDays
         });
       }
     }
@@ -256,10 +272,10 @@ function findCollectionId(pointId, collectionDate) {
   }
 
   try {
-    var sheet  = getSheet(SHEET_NAMES.SCHEDULE);
-    var data   = sheet.getDataRange().getValues();
+    var sheet = getSheet(SHEET_NAMES.SCHEDULE);
+    var data = sheet.getDataRange().getValues();
     var colMonth = collectionDate.getMonth();
-    var colYear  = collectionDate.getFullYear();
+    var colYear = collectionDate.getFullYear();
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][1]) !== pointId) continue;
@@ -269,7 +285,7 @@ function findCollectionId(pointId, collectionDate) {
 
       // Compara por mês e ano — o analista pode coletar em qualquer dia do mês
       if (plannedDate.getMonth() === colMonth &&
-          plannedDate.getFullYear() === colYear) {
+        plannedDate.getFullYear() === colYear) {
         return String(data[i][0]);
       }
     }

@@ -77,6 +77,7 @@ Each `.gs` file has a single responsibility. No module accesses Sheets by tab na
 | `Report.gs` | Generates monthly PDF, saves to Drive |
 | `Log.gs` | Writes events to SYSTEM_LOG |
 | `Utils.gs` | Reusable utility functions, no external dependencies |
+| `Dev.gs` | Development and testing utilities (not triggered) |
 
 **Design rule:** `Calculations.gs` and `Notifications.gs` are pure modules — they receive data as parameters and return results. They never access Sheets or external services directly. This makes them easy to test and maintain independently.
 
@@ -130,8 +131,8 @@ Each `.gs` file has a single responsibility. No module accesses Sheets by tab na
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/environmental-monitoring-system.git
-cd environmental-monitoring-system
+git clone https://github.com/oiamoreyuri/environmental-microbiological-monitoring-system.git
+cd environmental-microbiological-monitoring-system
 
 # Install clasp
 npm install -g @google/clasp
@@ -171,6 +172,7 @@ environmental-monitoring-system/
     ├── Config.gs
     ├── SamplingPoints.gs
     ├── Schedule.gs
+    ├── Dev.gs
     ├── Results.gs
     ├── Calculations.gs
     ├── Actions.gs
@@ -184,7 +186,7 @@ environmental-monitoring-system/
 
 ## Project status
 
-🟡 Active development — Module interface definition phase
+🟡 Active development — Initial integration testing phase
 
 ---
 

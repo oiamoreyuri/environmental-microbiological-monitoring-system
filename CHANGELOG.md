@@ -6,6 +6,50 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.0] — 2026-06-03
+
+### Changed
+
+**SAMPLING_POINTS tab — full restructuring**
+
+Migration script `Migration_2026_06.gs` (one-time, idempotent) performs three operations:
+
+#### 1. Removed 28 legacy sampling points
+- Points removed: all `*-PAR-PIS-*` combined wall/floor points (replaced by separate PAR and PISO points), plus legacy `PREP-04-*` and `ENV-04-*` points being reorganized.
+
+#### 2. Renamed 5 sectors
+| Old name | New name |
+|---|---|
+| SD 1 | Spray Dryer 1 |
+| SD 2 | Spray Dryer 2 |
+| SD 3 | Spray Dryer 3 |
+| SD 4 | Spray Dryer 4 |
+| SD Piloto | Spray Dryer Piloto |
+
+#### 3. Added 111 new sampling points across 17 areas
+- Sala de Preparo 1–3 (9 points)
+- Sala de Envase 1–3 (14 points)
+- Spray Dryer 1–4 + Piloto (44 points)
+- Homogeneização (11 points)
+- Extração/Evaporação I–II (24 points)
+- Flash Dryer (6 points)
+- P&D (6 points — new area)
+- Sala Alergênicos (5 points — new area)
+
+#### Frequency standardization
+All frequency values now use English labels to match Schedule.gs validation:
+`Mensal → Monthly`, `Bimestral → Bimonthly`, `Trimestral → Quarterly`, `Semestral → Biannual`, `Quinzenal → Biweekly`.
+
+**Note:** `Biweekly` is not yet supported by `_calculatePlannedDates()` in Schedule.gs. A new case must be added before the next schedule generation. Affects 4 points: EXT-I/II-BOM-SUC-01 and EXT-I/II-PAS-01.
+
+#### Column structure updated
+SAMPLING_POINTS now uses 10 columns:
+`POINT_ID | Sector | Zone | Area | Limit_MA | Limit_BL | Limit_SAL | Active | Full_Name | Frequency`
+
+Previous 15-column structure (with Sample_Type, Assays, Collection_Method, Inactive_Date, Inactive_Reason) was simplified. `SamplingPoints.gs` may need corresponding update to reflect the new column indices.
+
+---
+
 ## [0.2.1] — 2026-06-02
 
 ### Fixed

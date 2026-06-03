@@ -22,12 +22,12 @@ function _devTestConnection() {
 
 function _devTestSubmission() {
   var testData = {
-    pointId:        'DESP-CIL-LAV-01',
+    pointId: 'DESP-CIL-LAV-01',
     collectionDate: new Date('2026-05-30'),
-    assay:          'MA',
-    result:         55,
-    analyst:        'test@yourcompany.com',
-    notes:          'Dev test — not a real result'
+    assay: 'MA',
+    result: 55,
+    analyst: 'test@yourcompany.com',
+    notes: 'Dev test — not a real result'
   };
 
   processFormSubmission(testData);
@@ -52,7 +52,7 @@ function _devCheckConfig() {
 function _devListActivePoints() {
   var points = getActivePoints();
   Logger.log('Active points: ' + points.length);
-  points.forEach(function(p) {
+  points.forEach(function (p) {
     Logger.log(p.pointId + ' — ' + p.fullName + ' (' + p.sector + ')');
   });
 }
@@ -63,12 +63,16 @@ function _devListActivePoints() {
  * @returns {void}
  */
 function _devPreviewSchedule() {
-  var year   = new Date().getFullYear();
+  var year = new Date().getFullYear();
   var points = getActivePoints();
 
-  points.forEach(function(p) {
+  points.forEach(function (p) {
     Logger.log(p.pointId + ' (' + p.frequency + '):');
   });
 
   Logger.log('Run generateAnnualSchedule(' + year + ') to write to SCHEDULE tab.');
+}
+
+function _devGenerateSchedule2026() {
+  generateAnnualSchedule(2026);
 }

@@ -31,16 +31,19 @@ function onFormSubmit(e) {
 
 /**
  * Extrai e normaliza os dados do evento do Forms.
- * Ordem das colunas (e.values):
- *   0 — Timestamp (gerado automaticamente pelo Forms)
- *   1 — Setor (nome em português, ex: 'SD 1')
- *   2 — Ponto de Coleta (nome completo em português, ex: 'Câmara de Secagem')
- *   3 — Data da Coleta (DD/MM/YYYY)
- *   4 — Ensaio (MA / BL / SAL)
- *   5 — Resultado
- *   6 — Analista Responsável
- *   7 — Observações (opcional)
- * @param  {Object} e  Evento do Forms
+ * Usa e.response.getItemResponses() para ler cada campo pelo título normalizado,
+ * independente da ordem das perguntas no formulário.
+ *
+ * Campos esperados (títulos normalizados):
+ *   - 'setor'                  → Setor (ex: 'SD 1')
+ *   - 'ponto de coleta'        → Nome completo do ponto (ex: 'Câmara de Secagem')
+ *   - 'data da coleta'         → DD/MM/YYYY ou YYYY-MM-DD (ISO)
+ *   - 'ensaio'                 → MA / BL / SAL
+ *   - 'resultado (ufc/ml)'    → Valor numérico (aceita vírgula como decimal)
+ *   - 'analista responsável'   → Nome do analista
+ *   - 'observações'            → (opcional)
+ *
+ * @param  {Object} e  Evento do Forms (e.response = FormResponse)
  * @returns {Object}   formData normalizado
  */
 function _extractFormData(e) {

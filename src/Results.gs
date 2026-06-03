@@ -182,7 +182,9 @@ function recordCorrection(originalResultId, correctedData) {
       String(original[1]),    // COLLECTION_ID (mesmo da original)
       String(original[2]),    // POINT_ID
       new Date(),             // Timestamp (momento da retificação)
-      original[4],            // Collection_Date (mesma da original)
+      original[4] instanceof Date
+        ? formatDate(original[4])
+        : original[4],            // Collection_Date (mesma da original)
       assay,                  // Assay
       newResult,              // Result (corrigido)
       String(original[7]),    // Unit
@@ -259,9 +261,17 @@ function processFormSubmission(formData) {
     // 4. Calcular status e percentual
     // ------------------------------------------------------------------
     var params     = getAllParams();
-    var percentage = calculatePercentage(result, limit);
+
+    // SAL (Salmonella) é ensaio qualitativo: resultado 0=Ausente, 1=Presente.
+    // Limite é string (ex: 'Absent/10mL') e não pode passar por calculatePercentage.
+    // Para SAL: limit numérico = 1 (binário), percentual = 0 ou 100, unidade = 'P/A'.
+    var isSAL      = assay === 'SAL';
+    var numericLimit = isSAL ? 1 : limit;
+    var percentage = isSAL ? (result > 0 ? 100 : 0) : calculatePercentage(result, limit);
+    var unit       = isSAL ? 'P/A' : 'CFU/mL';
+
     var status     = calculateStatus(
-      assay, result, limit,
+      assay, result, numericLimit,
       params.Alert_Threshold,
       params.Critical_Threshold
     );
@@ -292,8 +302,8 @@ function processFormSubmission(formData) {
       collectionDate: collectionDate,
       assay:          assay,
       result:         result,
-      unit:           'CFU/mL',
-      limit:          limit,
+      unit:           unit,
+      limit:          numericLimit,
       percentage:     percentage,
       status:         status,
       analyst:        formData.analyst,
@@ -317,7 +327,7 @@ function processFormSubmission(formData) {
     // ------------------------------------------------------------------
     // 9. Verificar reincidência
     // ------------------------------------------------------------------
-    var ncHistory      = getResultHistory(formData.pointId, assay, 0);
+    var ncHistory      = getResultHistory(formData.pointId, assay, null);
     var recentNcCount  = detectRecurrence(ncHistory, params.Recurrence_Window_Months);
 
     // ------------------------------------------------------------------

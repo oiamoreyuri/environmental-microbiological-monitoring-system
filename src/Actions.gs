@@ -39,7 +39,6 @@ function openAction(originResultId, actionType, responsible, description) {
   try {
     var actionId    = generateId('ACT', _nextActionSequence());
     var openedDate  = new Date();
-    var deadlineDays = Number(getParam('Resample_Deadline_Days'));
 
     // Resample: prazo em dias úteis (Resample_Deadline_Days)
     // CAPA: prazo em dias corridos (CAPA_Deadline_Days)
@@ -110,11 +109,14 @@ function closeAction(actionId, resampleResultId, effective, notes) {
       if (String(data[i][0]) === actionId) {
         var row = i + 1; // linha no Sheets é 1-based
 
-        sheet.getRange(row, 8).setValue(resampleResultId || ''); // Resample_Result_ID
-        sheet.getRange(row, 9).setValue('Closed');               // Action_Status
-        sheet.getRange(row, 10).setValue(new Date());            // Closed_Date
-        sheet.getRange(row, 11).setValue(effective ? true : false); // Effective
-        sheet.getRange(row, 12).setValue(notes || '');           // Notes
+        // Atualiza colunas 8-12 em batch (Resample_Result_ID, Status, Closed_Date, Effective, Notes)
+        sheet.getRange(row, 8, 1, 5).setValues([[
+          resampleResultId || '',          // Resample_Result_ID
+          'Closed',                         // Action_Status
+          new Date(),                       // Closed_Date
+          effective ? true : false,         // Effective
+          notes || ''                       // Notes
+        ]]);
 
         writeLog({
           event:           'Action closed',

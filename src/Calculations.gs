@@ -97,15 +97,6 @@ function detectRecurrence(ncHistory, windowMonths) {
 
 /**
  * Determina qual tipo de ação deve ser aberta para um dado status e flags.
- * CAPA tem prioridade sobre Resample quando há reincidência.
- * @param  {string}  status        Status calculado do resultado
- * @param  {boolean} hasTrend      Flag de tendência crescente
- * @param  {boolean} hasRecurrence Flag de reincidência
- * @returns {string|null} 'Observation' | 'Resample' | 'CAPA' | null
- */
-
-/**
- * Determina qual tipo de ação deve ser aberta para um dado status e flags.
  * Regras de escalonamento:
  * - Crítico ou Salmonella: CAPA imediata
  * - 3+ NCs no mesmo ponto em 6 meses: CAPA por reincidência sistêmica
@@ -134,12 +125,12 @@ function determineActionType(status, hasTrend, recentNcCount) {
 
 /**
  * Determina quais níveis de destinatários devem ser notificados.
- * @param  {string}  status
- * @param  {boolean} hasRecurrence
- * @returns {string[]}  Subconjunto de ['primary', 'production', 'manager1', 'manager2']
- */
-/**
- * Determina quais níveis de destinatários devem ser notificados.
+ * Escalonamento por severidade:
+ * - Critical: cadeia completa (primary → manager2)
+ * - 3+ NCs: CAPA aberta, escala até manager1
+ * - 2ª NC: alerta para manager1
+ * - 1ª NC: qualidade + produção
+ * - Alert: apenas qualidade
  * @param  {string} status
  * @param  {number} recentNcCount  Quantidade de NCs no ponto nos últimos 6 meses
  * @returns {string[]}  Subconjunto de ['primary', 'production', 'manager1', 'manager2']
