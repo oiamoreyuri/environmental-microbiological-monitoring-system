@@ -29,6 +29,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Bug: verification page showing incorrect status for approved records (duplicate rows from test runs)
 - Bug: _calculatePlannedDates throwing error for Biweekly frequency
+- Normalized sector and point Full_Name fields to Arabic numerals (Extração/Evaporação I/II → 1/2, Tanque I/II → 1/2, Homogeneizador I/II → 1/2, Tanque de Armazenamento I/II → 1/2) for consistency with Google Forms options
 
 ### Infrastructure
 - Migration script Migration_2026_06.gs created and executed for SAMPLING_POINTS update
