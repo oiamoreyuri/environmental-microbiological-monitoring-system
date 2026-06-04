@@ -88,6 +88,95 @@ function _devCheckMigrationState() {
 
 
 /**
+ * PATCH 2026-06-04 — Corrige nomes de setores e Full_Name.
+ * Altera: Extração/Evaporação I→1, II→2; Tanque I→1, II→2;
+ * Homogeneizador I→1, II→2; Balança I→1; Tanque de Armazenamento I→1, II→2.
+ */
+function _devPatchNames_2026_06_04() {
+  var SSID = '11k1anTHUIVDoZ5JWNPFTHn_HxHph9Q32uyx4azHqqkI';
+  var ss = SpreadsheetApp.openById(SSID);
+  var sheet = ss.getSheetByName('SAMPLING_POINTS');
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0].map(function(h) { return String(h).trim(); });
+
+  var pidCol = headers.indexOf('POINT_ID');
+  var secCol = headers.indexOf('Sector');
+  var nameCol = headers.indexOf('Full_Name');
+  Logger.log('Columns — POINT_ID:' + pidCol + ' Sector:' + secCol + ' Full_Name:' + nameCol);
+
+  // Map: POINT_ID → { sector: newValue, name: newValue }
+  var patches = {
+    // EXT-I: Sector → "Extração/Evaporação 1"
+    'EXT-I-EVA-01':     { sector: 'Extração/Evaporação 1' },
+    'EXT-I-DEC-01':     { sector: 'Extração/Evaporação 1' },
+    'EXT-I-TQ-I-01':    { sector: 'Extração/Evaporação 1', name: 'Tanque 1' },
+    'EXT-I-TQ-II-01':   { sector: 'Extração/Evaporação 1', name: 'Tanque 2' },
+    'EXT-I-BOM-SUC-01': { sector: 'Extração/Evaporação 1' },
+    'EXT-I-PAS-01':     { sector: 'Extração/Evaporação 1' },
+    'EXT-I-TUB-EXT-01': { sector: 'Extração/Evaporação 1' },
+    'EXT-I-TQ-EXT-01':  { sector: 'Extração/Evaporação 1' },
+    'EXT-I-AR-AMB-01':  { sector: 'Extração/Evaporação 1' },
+    'EXT-I-PAR-01':     { sector: 'Extração/Evaporação 1' },
+    'EXT-I-PISO-01':    { sector: 'Extração/Evaporação 1' },
+    'EXT-I-RALO-01':    { sector: 'Extração/Evaporação 1' },
+    // EXT-II: Sector → "Extração/Evaporação 2"
+    'EXT-II-EVA-01':     { sector: 'Extração/Evaporação 2' },
+    'EXT-II-DEC-01':     { sector: 'Extração/Evaporação 2' },
+    'EXT-II-TQ-I-01':    { sector: 'Extração/Evaporação 2', name: 'Tanque 1' },
+    'EXT-II-TQ-II-01':   { sector: 'Extração/Evaporação 2', name: 'Tanque 2' },
+    'EXT-II-BOM-SUC-01': { sector: 'Extração/Evaporação 2' },
+    'EXT-II-PAS-01':     { sector: 'Extração/Evaporação 2' },
+    'EXT-II-TUB-EXT-01': { sector: 'Extração/Evaporação 2' },
+    'EXT-II-TQ-EXT-01':  { sector: 'Extração/Evaporação 2' },
+    'EXT-II-AR-AMB-01':  { sector: 'Extração/Evaporação 2' },
+    'EXT-II-PAR-01':     { sector: 'Extração/Evaporação 2' },
+    'EXT-II-PISO-01':    { sector: 'Extração/Evaporação 2' },
+    'EXT-II-RALO-01':    { sector: 'Extração/Evaporação 2' },
+    // HOM: Full_Name
+    'HOM-HOM-I-01':  { name: 'Homogeneizador 1' },
+    'HOM-HOM-II-01': { name: 'Homogeneizador 2' },
+    // PREP: Full_Name
+    'PREP-01-TQ-ARM-I-01':  { name: 'Tanque de Armazenamento 1' },
+    'PREP-01-TQ-ARM-II-01': { name: 'Tanque de Armazenamento 2' },
+    'PREP-02-TQ-ARM-I-01':  { name: 'Tanque de Armazenamento 1' },
+    'PREP-02-TQ-ARM-II-01': { name: 'Tanque de Armazenamento 2' },
+    'PREP-03-TQ-ARM-I-01':  { name: 'Tanque de Armazenamento 1' },
+    'PREP-03-TQ-ARM-II-01': { name: 'Tanque de Armazenamento 2' },
+    // ENV-02: Full_Name
+    'ENV-02-BAL-I-01': { name: 'Balança 1' }
+  };
+
+  var changedCells = 0;
+  for (var i = 1; i < data.length; i++) {
+    var pid = String(data[i][pidCol]).trim();
+    var patch = patches[pid];
+    if (!patch) continue;
+
+    if (patch.sector) {
+      var oldSec = String(data[i][secCol]).trim();
+      if (oldSec !== patch.sector) {
+        sheet.getRange(i + 1, secCol + 1).setValue(patch.sector);
+        changedCells++;
+        Logger.log('  ' + pid + ' Sector: "' + oldSec + '" → "' + patch.sector + '"');
+      }
+    }
+    if (patch.name) {
+      var oldName = String(data[i][nameCol]).trim();
+      if (oldName !== patch.name) {
+        sheet.getRange(i + 1, nameCol + 1).setValue(patch.name);
+        changedCells++;
+        Logger.log('  ' + pid + ' Full_Name: "' + oldName + '" → "' + patch.name + '"');
+      }
+    }
+  }
+
+  Logger.log('===================================');
+  Logger.log('Patch complete. Cells changed: ' + changedCells);
+  Logger.log('===================================');
+}
+
+
+/**
  * Executa a migração da aba SAMPLING_POINTS:
  * 0.5) Cleanup — remove linhas inseridas por execução anterior (idempotente)
  * 1) SKIP — deleções já executadas em run anterior
@@ -286,7 +375,7 @@ function _buildNewRows(colMap, numCols) {
   add('ENV-01-ESC-COR-01','Sala de Envase 1','A',3,250,100,false,true,'Escada/Corrimão','Quarterly');
 
   // --- Sala de Envase 2 ---
-  add('ENV-02-BAL-I-01','Sala de Envase 2','A',2,250,100,false,true,'Balança I','Monthly');
+  add('ENV-02-BAL-I-01','Sala de Envase 2','A',2,250,100,false,true,'Balança 1','Monthly');
   add('ENV-02-BAL-02','Sala de Envase 2','A',2,250,100,false,true,'Balança II','Monthly');
   add('ENV-02-PAR-01','Sala de Envase 2','A',3,250,100,true,true,'Parede','Quarterly');
   add('ENV-02-PISO-01','Sala de Envase 2','A',3,250,100,true,true,'Piso','Quarterly');
@@ -346,8 +435,8 @@ function _buildNewRows(colMap, numCols) {
   add('SD-PIL-RALO-01','Spray Dryer Piloto','B',3,300,150,true,true,'Ralo','Quarterly');
 
   // --- Homogeneização ---
-  add('HOM-HOM-I-01','Homogeneização','A',1,50,30,false,true,'Homogeneizador I','Monthly');
-  add('HOM-HOM-II-01','Homogeneização','A',1,50,30,false,true,'Homogeneizador II','Monthly');
+  add('HOM-HOM-I-01','Homogeneização','A',1,50,30,false,true,'Homogeneizador 1','Monthly');
+  add('HOM-HOM-II-01','Homogeneização','A',1,50,30,false,true,'Homogeneizador 2','Monthly');
   add('HOM-UTE-01','Homogeneização','A',1,50,30,false,true,'Utensílio','Monthly');
   add('HOM-PEN-01','Homogeneização','A',1,50,30,false,true,'Peneira','Monthly');
   add('HOM-MIS-01','Homogeneização','A',1,50,30,false,true,'Misturador','Monthly');
@@ -358,33 +447,33 @@ function _buildNewRows(colMap, numCols) {
   add('HOM-PISO-01','Homogeneização','A',3,250,100,true,true,'Piso','Quarterly');
   add('HOM-RALO-01','Homogeneização','A',3,250,100,true,true,'Ralo','Quarterly');
 
-  // --- Extração/Evaporação I ---
-  add('EXT-I-EVA-01','Extração/Evaporação I','B',1,100,70,false,true,'Evaporador','Monthly');
-  add('EXT-I-DEC-01','Extração/Evaporação I','B',1,100,70,false,true,'Decantador','Monthly');
-  add('EXT-I-TQ-I-01','Extração/Evaporação I','B',1,100,70,false,true,'Tanque I','Bimonthly');
-  add('EXT-I-TQ-II-01','Extração/Evaporação I','B',1,100,70,false,true,'Tanque II','Bimonthly');
-  add('EXT-I-BOM-SUC-01','Extração/Evaporação I','B',1,100,70,false,true,'Bomba de Sucção','Biweekly');
-  add('EXT-I-PAS-01','Extração/Evaporação I','B',1,100,70,false,true,'Pasteurizador','Biweekly');
-  add('EXT-I-TUB-EXT-01','Extração/Evaporação I','B',2,300,100,false,true,'Tubulação Externa','Quarterly');
-  add('EXT-I-TQ-EXT-01','Extração/Evaporação I','B',2,300,100,false,true,'Tanque Externo','Quarterly');
-  add('EXT-I-AR-AMB-01','Extração/Evaporação I','B',2,300,100,false,true,'Ar Ambiente','Quarterly');
-  add('EXT-I-PAR-01','Extração/Evaporação I','B',3,300,150,true,true,'Parede','Quarterly');
-  add('EXT-I-PISO-01','Extração/Evaporação I','B',3,300,150,true,true,'Piso','Quarterly');
-  add('EXT-I-RALO-01','Extração/Evaporação I','B',3,300,150,true,true,'Ralo','Quarterly');
+  // --- Extração/Evaporação 1 ---
+  add('EXT-I-EVA-01','Extração/Evaporação 1','B',1,100,70,false,true,'Evaporador','Monthly');
+  add('EXT-I-DEC-01','Extração/Evaporação 1','B',1,100,70,false,true,'Decantador','Monthly');
+  add('EXT-I-TQ-I-01','Extração/Evaporação 1','B',1,100,70,false,true,'Tanque 1','Bimonthly');
+  add('EXT-I-TQ-II-01','Extração/Evaporação 1','B',1,100,70,false,true,'Tanque 2','Bimonthly');
+  add('EXT-I-BOM-SUC-01','Extração/Evaporação 1','B',1,100,70,false,true,'Bomba de Sucção','Biweekly');
+  add('EXT-I-PAS-01','Extração/Evaporação 1','B',1,100,70,false,true,'Pasteurizador','Biweekly');
+  add('EXT-I-TUB-EXT-01','Extração/Evaporação 1','B',2,300,100,false,true,'Tubulação Externa','Quarterly');
+  add('EXT-I-TQ-EXT-01','Extração/Evaporação 1','B',2,300,100,false,true,'Tanque Externo','Quarterly');
+  add('EXT-I-AR-AMB-01','Extração/Evaporação 1','B',2,300,100,false,true,'Ar Ambiente','Quarterly');
+  add('EXT-I-PAR-01','Extração/Evaporação 1','B',3,300,150,true,true,'Parede','Quarterly');
+  add('EXT-I-PISO-01','Extração/Evaporação 1','B',3,300,150,true,true,'Piso','Quarterly');
+  add('EXT-I-RALO-01','Extração/Evaporação 1','B',3,300,150,true,true,'Ralo','Quarterly');
 
-  // --- Extração/Evaporação II ---
-  add('EXT-II-EVA-01','Extração/Evaporação II','B',1,100,70,false,true,'Evaporador','Monthly');
-  add('EXT-II-DEC-01','Extração/Evaporação II','B',1,100,70,false,true,'Decantador','Monthly');
-  add('EXT-II-TQ-I-01','Extração/Evaporação II','B',1,100,70,false,true,'Tanque I','Bimonthly');
-  add('EXT-II-TQ-II-01','Extração/Evaporação II','B',1,100,70,false,true,'Tanque II','Bimonthly');
-  add('EXT-II-BOM-SUC-01','Extração/Evaporação II','B',1,100,70,false,true,'Bomba de Sucção','Biweekly');
-  add('EXT-II-PAS-01','Extração/Evaporação II','B',1,100,70,false,true,'Pasteurizador','Biweekly');
-  add('EXT-II-TUB-EXT-01','Extração/Evaporação II','B',2,300,100,false,true,'Tubulação Externa','Quarterly');
-  add('EXT-II-TQ-EXT-01','Extração/Evaporação II','B',2,300,100,false,true,'Tanque Externo','Quarterly');
-  add('EXT-II-AR-AMB-01','Extração/Evaporação II','B',2,300,100,false,true,'Ar Ambiente','Quarterly');
-  add('EXT-II-PAR-01','Extração/Evaporação II','B',3,300,150,true,true,'Parede','Quarterly');
-  add('EXT-II-PISO-01','Extração/Evaporação II','B',3,300,150,true,true,'Piso','Quarterly');
-  add('EXT-II-RALO-01','Extração/Evaporação II','B',3,300,150,true,true,'Ralo','Quarterly');
+  // --- Extração/Evaporação 2 ---
+  add('EXT-II-EVA-01','Extração/Evaporação 2','B',1,100,70,false,true,'Evaporador','Monthly');
+  add('EXT-II-DEC-01','Extração/Evaporação 2','B',1,100,70,false,true,'Decantador','Monthly');
+  add('EXT-II-TQ-I-01','Extração/Evaporação 2','B',1,100,70,false,true,'Tanque 1','Bimonthly');
+  add('EXT-II-TQ-II-01','Extração/Evaporação 2','B',1,100,70,false,true,'Tanque 2','Bimonthly');
+  add('EXT-II-BOM-SUC-01','Extração/Evaporação 2','B',1,100,70,false,true,'Bomba de Sucção','Biweekly');
+  add('EXT-II-PAS-01','Extração/Evaporação 2','B',1,100,70,false,true,'Pasteurizador','Biweekly');
+  add('EXT-II-TUB-EXT-01','Extração/Evaporação 2','B',2,300,100,false,true,'Tubulação Externa','Quarterly');
+  add('EXT-II-TQ-EXT-01','Extração/Evaporação 2','B',2,300,100,false,true,'Tanque Externo','Quarterly');
+  add('EXT-II-AR-AMB-01','Extração/Evaporação 2','B',2,300,100,false,true,'Ar Ambiente','Quarterly');
+  add('EXT-II-PAR-01','Extração/Evaporação 2','B',3,300,150,true,true,'Parede','Quarterly');
+  add('EXT-II-PISO-01','Extração/Evaporação 2','B',3,300,150,true,true,'Piso','Quarterly');
+  add('EXT-II-RALO-01','Extração/Evaporação 2','B',3,300,150,true,true,'Ralo','Quarterly');
 
   // --- Flash Dryer ---
   add('FD-TQ-ABS-01','Flash Dryer','A',1,50,30,false,true,'Tanque de Abastecimento','Monthly');

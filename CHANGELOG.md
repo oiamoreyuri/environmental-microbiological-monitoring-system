@@ -6,47 +6,33 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.3.0] — 2026-06-03
+## [0.3.0] - 2026-06-03
+
+### Added
+- SAMPLING_POINTS expanded from 107 to 190 active points
+- New sectors: Homogeneização, Extração/Evaporação I, Extração/Evaporação II, Flash Dryer, P&D, Sala Alergênicos
+- New points in existing sectors: Parede, Piso and Ralo split into individual POINT_IDs across all sectors (previously grouped as PAR-PIS-01)
+- Expanded SD 4 (Spray Dryer 4) to full production line: Peneira Vibratória, Utensílio, Tanque de Mistura, Tanque de Equilíbrio, Placa de Distribuição, Balança, Tubulação Externa, Tanque Externo, Escada/Corrimão, Parede, Piso, Ralo
+- Expanded SD Piloto (Spray Dryer Piloto) with same additional points as SD 4
+- New SD 1/2/3 points: Tubulação Externa (SD 2 and SD 3), Curva Externa (SD 1), Parede, Piso, Ralo for all
+- Escada/Corrimão added to Salas de Envase 1, 2 and 3
+- Balança I and Balança II as separate points in Sala de Envase 2
+- Biweekly frequency support in _calculatePlannedDates (day 15 and last day of each month, adjusted for holidays and weekends)
+- Annual schedule regenerated for 2026: 1,416 collection entries across 190 active points
 
 ### Changed
+- Sector names updated: SD 1/2/3/4 and SD Piloto renamed to Spray Dryer 1/2/3/4 and Spray Dryer Piloto
+- Sala de Preparo 4 and Sala de Envase 4 removed as independent sectors; points migrated to Spray Dryer 4 (single integrated production line)
+- _extractFormData rewritten to use e.response (FormResponse API) instead of e.values, fixing trigger compatibility with programmatic form triggers
+- collectionDate timezone offset fixed: date now formatted as string before appendRow to prevent UTC serialization shifting date to previous day
 
-**SAMPLING_POINTS tab — full restructuring**
+### Fixed
+- Bug: verification page showing incorrect status for approved records (duplicate rows from test runs)
+- Bug: _calculatePlannedDates throwing error for Biweekly frequency
 
-Migration script `Migration_2026_06.gs` (one-time, idempotent) performs three operations:
-
-#### 1. Removed 28 legacy sampling points
-- Points removed: all `*-PAR-PIS-*` combined wall/floor points (replaced by separate PAR and PISO points), plus legacy `PREP-04-*` and `ENV-04-*` points being reorganized.
-
-#### 2. Renamed 5 sectors
-| Old name | New name |
-|---|---|
-| SD 1 | Spray Dryer 1 |
-| SD 2 | Spray Dryer 2 |
-| SD 3 | Spray Dryer 3 |
-| SD 4 | Spray Dryer 4 |
-| SD Piloto | Spray Dryer Piloto |
-
-#### 3. Added 111 new sampling points across 17 areas
-- Sala de Preparo 1–3 (9 points)
-- Sala de Envase 1–3 (14 points)
-- Spray Dryer 1–4 + Piloto (44 points)
-- Homogeneização (11 points)
-- Extração/Evaporação I–II (24 points)
-- Flash Dryer (6 points)
-- P&D (6 points — new area)
-- Sala Alergênicos (5 points — new area)
-
-#### Frequency standardization
-All frequency values now use English labels to match Schedule.gs validation:
-`Mensal → Monthly`, `Bimestral → Bimonthly`, `Trimestral → Quarterly`, `Semestral → Biannual`, `Quinzenal → Biweekly`.
-
-**Note:** `Biweekly` is not yet supported by `_calculatePlannedDates()` in Schedule.gs. A new case must be added before the next schedule generation. Affects 4 points: EXT-I/II-BOM-SUC-01 and EXT-I/II-PAS-01.
-
-#### Column structure updated
-SAMPLING_POINTS now uses 10 columns:
-`POINT_ID | Sector | Zone | Area | Limit_MA | Limit_BL | Limit_SAL | Active | Full_Name | Frequency`
-
-Previous 15-column structure (with Sample_Type, Assays, Collection_Method, Inactive_Date, Inactive_Reason) was simplified. `SamplingPoints.gs` may need corresponding update to reflect the new column indices.
+### Infrastructure
+- Migration script Migration_2026_06.gs created and executed for SAMPLING_POINTS update
+- Historical data import backlog registered: 5,756 valid records from 2022-2026 CSV pending import after go-live
 
 ---
 
