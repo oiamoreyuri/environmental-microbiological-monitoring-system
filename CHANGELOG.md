@@ -31,7 +31,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Formulário HTML offline para contingência registrado como roadmap
 
 ### Pendente (próxima sessão)
-- Alias numérico sequencial (P001, P002...) nos pontos de amostragem
+- ~~Alias numérico sequencial (P001, P002...)~~ — descartado. Codificação atual (ex.: DESP-CIL-LAV-01) é autodescritiva e auditavelmente superior a um alias sequencial sem semântica.
 - Importação manual das 152 linhas com POINT_ID em branco do HISTORICAL_IMPORT
 - Elaborar FOR.PS.LAB.02-02 (planilha de contingência)
 - Implementar trigger de backup diário CSV para rede local
