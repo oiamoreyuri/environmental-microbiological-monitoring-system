@@ -184,9 +184,34 @@ environmental-monitoring-system/
 
 ---
 
-## Project status
+## Status do projeto
 
-🟡 Active development — Initial integration testing phase
+**Versão atual:** 0.4.0
+
+### Concluído
+- Sistema completo: Forms → Apps Script → Sheets → Looker Studio
+- 190 pontos de amostragem em 18 setores
+- Cronograma 2026 gerado (1.416 entradas)
+- Dados históricos 2022–2026 importados (5.589 registros)
+- Dashboard Looker Studio (3 páginas)
+- Grace period de 7 dias para alertas de atraso
+- Lembretes de coleta por e-mail (semanal + diário)
+- PS.LAB.02 Rev. 05 redigido
+
+### Pendente
+- Alias numérico sequencial nos pontos (P001, P002...)
+- Importação manual de 152 registros com POINT_ID em branco
+- FOR.PS.LAB.02-02 (planilha de contingência)
+- Backup diário CSV para rede local
+- Cadastro de pontos SAL + atualização do Forms
+- Release 1.0.0
+
+### Roadmap
+
+- [ ] Formulário HTML offline com sincronização automática para contingência de
+  indisponibilidade de internet (Service Worker + IndexedDB + endpoint doPost()
+  no Apps Script). Estimativa: 19–29h. Pré-requisito: estabilização do sistema
+  após certificação FSSC 22000 Stage 2.
 
 ---
 

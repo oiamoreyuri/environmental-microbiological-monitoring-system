@@ -6,6 +6,41 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## Unreleased
+
+### Planejado
+- Formulário HTML offline para contingência de registro em caso de queda de
+  internet. Solução vigente formalizada no PS.LAB.02 Rev. 05: formulário impresso
+  FOR.PS.LAB.02-02 com digitação retroativa. Implementação da solução offline
+  adiada para após certificação FSSC 22000 Stage 2.
+
+---
+
+## [0.4.0] - 2026-06-08
+
+### Adicionado
+- Grace period de 7 dias para detecção de coletas atrasadas (`Collection_Grace_Days` no CONFIG)
+- Lembretes de coleta por e-mail: semanal às segundas-feiras e diário nos demais dias (`dispatchCollectionReminders`)
+- Destinatários de lembretes configuráveis via CONFIG (`Reminder_Emails`)
+
+### Corrigido
+- Falsos alertas de atraso causados pelo intervalo de 2–3 dias entre coleta e registro de resultado
+
+### Documentado
+- Decisão de não implementar separação coleta/resultado neste ciclo — registrada como roadmap
+- Formulário HTML offline para contingência registrado como roadmap
+
+### Pendente (próxima sessão)
+- Alias numérico sequencial (P001, P002...) nos pontos de amostragem
+- Importação manual das 152 linhas com POINT_ID em branco do HISTORICAL_IMPORT
+- Elaborar FOR.PS.LAB.02-02 (planilha de contingência)
+- Implementar trigger de backup diário CSV para rede local
+- Cadastrar pontos de SAL no CADASTRO_PONTOS
+- Atualizar Google Forms com ensaio SAL
+- Release 1.0.0
+
+---
+
 ## [0.3.0] - 2026-06-03
 
 ### Added
