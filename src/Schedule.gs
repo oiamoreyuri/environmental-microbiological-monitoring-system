@@ -224,6 +224,30 @@ function getOverdueCollections() {
     var data = sheet.getDataRange().getValues();
     var today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Grace period: número de dias de tolerância após a data prevista
+    // antes de considerar a coleta como atrasada. Lido do CONFIG.
+    var graceDays = 7;
+    try {
+      var configSheet = SpreadsheetApp.getActiveSpreadsheet()
+        .getSheetByName('CONFIG');
+      if (configSheet) {
+        var configData = configSheet.getDataRange().getValues();
+        for (var c = 0; c < configData.length; c++) {
+          if (String(configData[c][0]) === 'Collection_Grace_Days') {
+            var parsed = parseInt(configData[c][1], 10);
+            if (!isNaN(parsed) && parsed >= 0) graceDays = parsed;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      // Se CONFIG inacessível, mantém o valor padrão de 7 dias
+    }
+
+    var graceDeadline = new Date(today);
+    graceDeadline.setDate(graceDeadline.getDate() - graceDays);
+
     var overdue = [];
 
     for (var i = 1; i < data.length; i++) {
@@ -236,7 +260,7 @@ function getOverdueCollections() {
       var planned = new Date(plannedDate);
       planned.setHours(0, 0, 0, 0);
 
-      if (planned < today) {
+      if (planned < graceDeadline) {
         var delayDays = Math.round((today - planned) / (1000 * 60 * 60 * 24));
 
         overdue.push({
