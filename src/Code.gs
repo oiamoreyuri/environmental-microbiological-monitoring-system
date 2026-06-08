@@ -376,6 +376,13 @@ function installTriggers() {
     .onFormSubmit()
     .create();
 
+  // Trigger diário — 07:00 — lembretes de coleta (semanal às seg, diário nos demais)
+  ScriptApp.newTrigger('dispatchCollectionReminders')
+    .timeBased()
+    .everyDays(1)
+    .atHour(7)
+    .create();
+
   // Trigger diário — 08:00
   ScriptApp.newTrigger('dailyCheck')
     .timeBased()
@@ -400,7 +407,7 @@ function installTriggers() {
   writeLog({
     event: 'Triggers installed',
     referenceId: 'installTriggers',
-    generatedStatus: 'dailyCheck + monthlyReport + generateNewYearSchedule',
+    generatedStatus: 'dispatchCollectionReminders + dailyCheck + monthlyReport + generateNewYearSchedule',
     triggeredAction: 'Forms trigger requires manual setup with Form ID',
     user: 'system'
   });
